@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      skill_analyses: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_url: string
+          id: string
+          market_readiness: number | null
+          market_skills: Json | null
+          match_percentage: number | null
+          skill_gaps: Json | null
+          student_skills: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          market_readiness?: number | null
+          market_skills?: Json | null
+          match_percentage?: number | null
+          skill_gaps?: Json | null
+          student_skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          market_readiness?: number | null
+          market_skills?: Json | null
+          match_percentage?: number | null
+          skill_gaps?: Json | null
+          student_skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
