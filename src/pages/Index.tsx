@@ -38,10 +38,10 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col gap-4 sm:flex-row justify-center">
-              <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-shadow">
+              <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-shadow" onClick={() => window.location.href = '/upload'}>
                 Get Started <ArrowRight className="h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button size="lg" variant="outline" className="gap-2" onClick={() => document.getElementById('sample-analysis')?.scrollIntoView({ behavior: 'smooth' })}>
                 View Demo <BarChart3 className="h-5 w-5" />
               </Button>
             </div>
@@ -83,7 +83,7 @@ const Index = () => {
       </section>
 
       {/* Sample Analysis */}
-      <section className="py-20">
+      <section id="sample-analysis" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4 md:text-4xl">Visual Skill Gap Analysis</h2>
@@ -185,7 +185,7 @@ const Index = () => {
               <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
                 Join thousands of IT students who have transformed their careers with data-driven insights
               </p>
-              <Button size="lg" variant="secondary" className="gap-2 shadow-xl">
+              <Button size="lg" variant="secondary" className="gap-2 shadow-xl" onClick={() => window.location.href = '/upload'}>
                 Start Your Analysis <ArrowRight className="h-5 w-5" />
               </Button>
             </div>

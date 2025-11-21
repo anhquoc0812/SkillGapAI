@@ -1,1 +1,7 @@
 project_id = "xwykwysxaqsyyizustyr"
+
+[functions.analyze-skills]
+verify_jwt = false
+
+[functions.compare-skills]
+verify_jwt = false
