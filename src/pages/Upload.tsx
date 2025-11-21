@@ -18,12 +18,13 @@ export default function Upload() {
     if (selectedFile) {
       // Validate file type
       const validTypes = ['application/pdf', 'text/plain', 'application/msword', 
-                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                          'text/csv'];
       
       if (!validTypes.includes(selectedFile.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload a PDF, TXT, or DOCX file",
+          description: "Please upload a PDF, TXT, DOCX, or CSV file",
           variant: "destructive"
         });
         return;
@@ -43,7 +44,7 @@ export default function Upload() {
   };
 
   const extractTextFromFile = async (file: File): Promise<string> => {
-    if (file.type === 'text/plain') {
+    if (file.type === 'text/plain' || file.type === 'text/csv') {
       return await file.text();
     }
     
@@ -166,7 +167,7 @@ export default function Upload() {
                 type="file"
                 id="file-upload"
                 className="hidden"
-                accept=".pdf,.txt,.doc,.docx"
+                accept=".pdf,.txt,.doc,.docx,.csv"
                 onChange={handleFileChange}
                 disabled={isAnalyzing}
               />
@@ -190,7 +191,7 @@ export default function Upload() {
                     <div>
                       <p className="text-lg font-medium">Click to upload</p>
                       <p className="text-sm text-muted-foreground">
-                        PDF, TXT, or DOCX (max 10MB)
+                        PDF, TXT, DOCX, or CSV (max 10MB)
                       </p>
                     </div>
                   </div>
