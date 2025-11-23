@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Upload from "./pages/Upload";
 import Results from "./pages/Results";
 import Auth from "./pages/Auth";
+import Personalize from "./pages/Personalize";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/upload" element={<Upload />} />
           <Route path="/results/:id" element={<Results />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/personalize" element={<Personalize />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
