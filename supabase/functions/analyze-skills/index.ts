@@ -3,102 +3,85 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Comprehensive skill mapping including IT curriculum subjects
+// Comprehensive skill mapping for Vietnamese IT transcript subjects
 const SKILL_MAPPING: Record<string, string[]> = {
-  // Programming Languages
-  "c/c++": ["c++", "c", "cpp", "c programming", "c language", "lập trình c"],
-  "java": ["java", "java core", "j2ee", "spring", "spring boot", "hibernate", "lập trình java"],
-  "python": ["python", "py", "pandas", "numpy", "scikit-learn", "pytorch", "tensorflow", "lập trình python"],
+  // Programming Languages & Courses
+  "c/c++": ["c++", "c", "cpp", "c programming", "c language", "lập trình c", "lập trình c++", "ngôn ngữ c"],
+  "java": ["java", "java core", "j2ee", "spring", "spring boot", "hibernate", "lập trình java", "java programming"],
+  "python": ["python", "py", "pandas", "numpy", "lập trình python", "python programming"],
   "javascript": ["javascript", "js", "es6", "typescript", "node.js", "nodejs", "express", "lập trình javascript"],
-  "c#": ["c#", "csharp", ".net", ".net core", "asp.net", "entity framework"],
-  "php": ["php", "laravel", "symfony", "lập trình php"],
-  "go": ["go", "golang"],
-  "rust": ["rust"],
-  "swift": ["swift", "swiftui"],
-  "kotlin": ["kotlin"],
+  "oop": ["oop", "object oriented", "lập trình hướng đối tượng", "hướng đối tượng", "object-oriented programming"],
   
-  // Web Development
-  "html/css": ["html", "css", "html5", "css3", "sass", "scss", "thiết kế web"],
-  "react": ["react", "reactjs", "react.js", "react native", "redux", "next.js"],
+  // Web & Mobile Development
+  "web development": ["web", "phát triển web", "lập trình web", "ứng dụng web", "web application"],
+  "html/css": ["html", "css", "html5", "css3", "thiết kế web"],
+  "react": ["react", "reactjs", "react.js", "react native"],
   "angular": ["angular", "angularjs"],
-  "vue": ["vue", "vuejs", "vue.js", "nuxt.js"],
-  "frontend": ["frontend", "front-end", "ui development", "giao diện người dùng"],
-  "backend": ["backend", "back-end", "server-side", "phát triển backend"],
-  "fullstack": ["fullstack", "full-stack", "full stack"],
-  
-  // Mobile Development
-  "android": ["android", "android studio", "android development", "lập trình android"],
-  "ios": ["ios", "ios development", "xcode", "lập trình ios"],
-  "mobile": ["mobile", "mobile app", "app development", "ứng dụng di động"],
-  "flutter": ["flutter", "dart"],
+  "vue": ["vue", "vuejs", "vue.js"],
+  "mobile development": ["mobile", "di động", "ứng dụng di động", "lập trình di động"],
+  "android": ["android", "android studio", "lập trình android"],
+  "ios": ["ios", "ios development", "lập trình ios"],
   
   // Database & Data
-  "sql": ["sql", "t-sql", "pl/sql", "mysql", "postgresql", "sql server", "cơ sở dữ liệu"],
+  "database": ["database", "cơ sở dữ liệu", "csdl", "hệ quản trị cơ sở dữ liệu", "dbms"],
+  "sql": ["sql", "mysql", "postgresql", "sql server", "oracle", "structured query language"],
   "nosql": ["nosql", "mongodb", "mongo", "cassandra", "redis"],
-  "database design": ["database design", "data modeling", "er diagram", "thiết kế csdl"],
-  "data structures": ["data structures", "cấu trúc dữ liệu", "dsa", "ctdl"],
-  "algorithms": ["algorithms", "thuật toán", "algorithm design", "giải thuật"],
-  "big data": ["big data", "hadoop", "spark", "dữ liệu lớn"],
-  "data analysis": ["data analysis", "phân tích dữ liệu", "analytics"],
+  "data structures": ["data structures", "cấu trúc dữ liệu", "ctdl", "dữ liệu"],
+  "algorithms": ["algorithms", "algorithm", "thuật toán", "giải thuật", "cấu trúc dữ liệu và giải thuật"],
   
   // AI & Machine Learning
-  "machine learning": ["machine learning", "ml", "học máy", "supervised learning"],
+  "artificial intelligence": ["ai", "artificial intelligence", "trí tuệ nhân tạo", "ttnt"],
+  "machine learning": ["machine learning", "ml", "học máy"],
   "deep learning": ["deep learning", "học sâu", "neural network", "mạng nơ-ron"],
-  "artificial intelligence": ["ai", "artificial intelligence", "trí tuệ nhân tạo"],
   "nlp": ["nlp", "natural language processing", "xử lý ngôn ngữ tự nhiên"],
-  "computer vision": ["computer vision", "thị giác máy tính", "image processing", "opencv"],
+  "computer vision": ["computer vision", "thị giác máy tính", "image processing", "xử lý ảnh"],
+  
+  // Systems & Architecture
+  "operating systems": ["operating systems", "os", "hệ điều hành", "hdh", "linux", "unix"],
+  "computer architecture": ["computer architecture", "kiến trúc máy tính", "ktmt", "organization"],
+  "computer networks": ["computer networks", "networking", "network", "mạng máy tính", "mmt"],
+  "distributed systems": ["distributed systems", "hệ phân tán", "hệ thống phân tán"],
+  "embedded systems": ["embedded", "nhúng", "embedded systems", "hệ thống nhúng", "hệ nhúng"],
   
   // Software Engineering
-  "software engineering": ["software engineering", "công nghệ phần mềm", "sdlc"],
-  "oop": ["oop", "object oriented", "lập trình hướng đối tượng", "hướng đối tượng"],
+  "software engineering": ["software engineering", "công nghệ phần mềm", "cnpm", "phần mềm"],
+  "requirements analysis": ["requirements", "phân tích yêu cầu", "yêu cầu phần mềm", "requirements engineering"],
+  "software design": ["software design", "thiết kế phần mềm", "phân tích thiết kế", "system design"],
+  "testing": ["testing", "qa", "qc", "kiểm thử", "kiểm thử phần mềm", "software testing"],
+  "software architecture": ["software architecture", "kiến trúc phần mềm"],
   "design patterns": ["design patterns", "mvc", "mvvm", "mẫu thiết kế"],
-  "software architecture": ["software architecture", "kiến trúc phần mềm", "system design"],
-  "testing": ["testing", "qa", "qc", "unit test", "kiểm thử", "kiểm thử phần mềm"],
-  "requirements analysis": ["requirements", "phân tích yêu cầu", "yêu cầu phần mềm"],
-  
-  // DevOps & Cloud
-  "git": ["git", "github", "gitlab", "version control", "quản lý phiên bản"],
-  "docker": ["docker", "containerization", "containers"],
-  "kubernetes": ["kubernetes", "k8s"],
-  "ci/cd": ["ci/cd", "continuous integration", "jenkins", "tích hợp liên tục"],
-  "aws": ["aws", "amazon web services", "cloud", "ec2", "s3"],
-  "azure": ["azure", "microsoft azure"],
-  "gcp": ["gcp", "google cloud"],
-  "devops": ["devops", "sre"],
-  
-  // Computer Science Fundamentals
-  "operating systems": ["operating systems", "os", "linux", "unix", "hệ điều hành"],
-  "computer networks": ["networking", "network", "tcp/ip", "mạng máy tính"],
-  "computer architecture": ["computer architecture", "kiến trúc máy tính", "hardware"],
-  "discrete math": ["discrete math", "toán rời rạc", "logic", "graph theory"],
-  "linear algebra": ["linear algebra", "đại số tuyến tính", "matrix"],
-  "calculus": ["calculus", "giải tích", "mathematics"],
-  "statistics": ["statistics", "xác suất thống kê", "probability"],
-  "logic": ["logic", "toán logic", "propositional logic"],
   
   // Security
-  "cybersecurity": ["cybersecurity", "security", "an ninh mạng", "bảo mật"],
-  "network security": ["network security", "firewall", "an ninh mạng"],
-  "information security": ["information security", "an toàn thông tin"],
+  "information security": ["information security", "an toàn thông tin", "attt", "security"],
+  "network security": ["network security", "an ninh mạng", "firewall"],
+  "cybersecurity": ["cybersecurity", "cyber security", "bảo mật"],
   
-  // Project Management & Soft Skills
-  "agile": ["agile", "scrum", "kanban", "sprint"],
-  "project management": ["project management", "quản lý dự án", "pm"],
-  "communication": ["communication", "giao tiếp", "teamwork", "làm việc nhóm"],
-  "problem solving": ["problem solving", "giải quyết vấn đề", "analytical thinking"],
-  "leadership": ["leadership", "lãnh đạo", "team lead"],
-  "presentation": ["presentation", "thuyết trình", "public speaking"],
+  // Mathematics
+  "discrete math": ["discrete math", "discrete mathematics", "toán rời rạc", "trr", "logic", "graph theory"],
+  "linear algebra": ["linear algebra", "đại số tuyến tính", "dstt", "matrix", "vector"],
+  "calculus": ["calculus", "giải tích", "gt", "mathematics", "toán cao cấp"],
+  "statistics": ["statistics", "probability", "xác suất thống kê", "xstk", "thống kê"],
+  "logic": ["logic", "toán logic", "mathematical logic", "propositional logic"],
+  
+  // Graphics & Multimedia
+  "computer graphics": ["computer graphics", "đồ họa máy tính", "đồ họa", "graphics", "opengl"],
+  "multimedia": ["multimedia", "đa phương tiện", "dpt"],
+  "game development": ["game", "game development", "phát triển game", "unity", "unreal"],
   
   // Other Technologies
-  "api": ["api", "rest", "restful", "graphql", "api development"],
-  "microservices": ["microservices", "vi dịch vụ"],
-  "blockchain": ["blockchain", "chuỗi khối", "cryptocurrency"],
-  "iot": ["iot", "internet of things", "vạn vật kết nối"],
-  "game development": ["game development", "unity", "unreal", "phát triển game"],
-  "ui/ux": ["ui/ux", "user experience", "thiết kế giao diện", "figma"],
-  "embedded systems": ["embedded", "nhúng", "embedded systems", "hệ thống nhúng"],
-  "multimedia": ["multimedia", "đa phương tiện", "graphics"],
-  "distributed systems": ["distributed systems", "hệ phân tán"]
+  "iot": ["iot", "internet of things", "vạn vật kết nối", "iot systems"],
+  "blockchain": ["blockchain", "chuỗi khối", "cryptocurrency", "smart contracts"],
+  "cloud computing": ["cloud", "cloud computing", "điện toán đám mây", "aws", "azure"],
+  "devops": ["devops", "ci/cd", "docker", "kubernetes"],
+  "git": ["git", "github", "gitlab", "version control", "quản lý phiên bản"],
+  
+  // UI/UX
+  "ui/ux": ["ui", "ux", "ui/ux", "user experience", "user interface", "thiết kế giao diện", "giao diện người dùng", "human-computer interaction", "hci"],
+  
+  // Soft Skills
+  "communication": ["communication", "giao tiếp", "teamwork", "làm việc nhóm"],
+  "problem solving": ["problem solving", "giải quyết vấn đề", "critical thinking"],
+  "project management": ["project management", "quản lý dự án", "agile", "scrum"]
 };
 
 Deno.serve(async (req) => {
@@ -135,24 +118,24 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a skill extraction assistant specialized in IT and Computer Science curriculum analysis. Extract technical skills, academic subjects, soft skills, and competencies from academic transcripts, CVs, or resumes. 
+            content: `You are a skill extraction assistant for analyzing Vietnamese IT student transcripts. Extract all course names, subjects, technologies, and skills mentioned in the transcript.
 
-Focus on:
-- Programming languages (C/C++, Java, Python, JavaScript, etc.)
-- Web technologies (HTML/CSS, React, Angular, Vue, Node.js)
-- Mobile development (Android, iOS, Flutter)
-- Database systems (SQL, NoSQL, MongoDB)
-- AI/ML topics (Machine Learning, Deep Learning, NLP, Computer Vision)
-- Computer Science fundamentals (Data Structures, Algorithms, Operating Systems, Computer Networks, Computer Architecture)
-- Mathematics (Discrete Math, Linear Algebra, Calculus, Statistics)
-- Software Engineering (OOP, Design Patterns, Testing, Software Architecture)
-- DevOps & Cloud (Git, Docker, Kubernetes, AWS, Azure)
-- Security (Cybersecurity, Network Security)
-- Soft skills (Communication, Teamwork, Problem Solving, Leadership)
-- Academic subjects in both English and Vietnamese (e.g., "Cấu trúc dữ liệu", "Lập trình hướng đối tượng")
+Look for these common transcript subjects:
+- Programming courses: "Lập trình C/C++", "Lập trình Java", "Lập trình Python", "Lập trình hướng đối tượng"
+- Data & Algorithms: "Cấu trúc dữ liệu và giải thuật", "Toán rời rạc", "Thuật toán"
+- Systems: "Hệ điều hành", "Kiến trúc máy tính", "Hệ thống nhúng", "Hệ phân tán"
+- Networks: "Mạng máy tính", "An ninh mạng", "An toàn thông tin"
+- Databases: "Cơ sở dữ liệu", "Hệ quản trị CSDL", "SQL", "NoSQL"
+- Software Engineering: "Công nghệ phần mềm", "Phân tích thiết kế hệ thống", "Kiểm thử phần mềm"
+- AI/ML: "Trí tuệ nhân tạo", "Học máy", "Xử lý ngôn ngữ tự nhiên", "Thị giác máy tính"
+- Web/Mobile: "Phát triển ứng dụng web", "Lập trình Android/iOS", "Thiết kế giao diện"
+- Mathematics: "Giải tích", "Đại số tuyến tính", "Xác suất thống kê", "Toán logic"
+- Other: "Đa phương tiện", "Đồ họa máy tính", "Blockchain", "IoT"
 
-Return ONLY a JSON array of skill/subject names. Be generous in extraction - include course names, technologies, methodologies, and competencies.
-Example: ["python", "data structures", "cấu trúc dữ liệu", "react", "machine learning", "communication", "git"]`
+Extract both Vietnamese course names and their English equivalents. Also extract any technologies, tools, frameworks, or skills mentioned.
+
+Return ONLY a JSON array of extracted items in lowercase.
+Example: ["lập trình c++", "c++", "cấu trúc dữ liệu", "data structures", "hệ điều hành", "operating systems", "react", "sql"]`
           },
           {
             role: 'user',
