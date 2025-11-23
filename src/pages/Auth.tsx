@@ -40,13 +40,17 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/personalize`
+          }
         });
         if (error) throw error;
         
         toast({
           title: "Success!",
-          description: "Account created successfully. You can now sign in."
+          description: "Account created! Redirecting to personalization..."
         });
+        navigate('/personalize');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
