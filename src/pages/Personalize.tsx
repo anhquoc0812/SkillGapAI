@@ -22,9 +22,27 @@ const PROGRAMMING_LANGUAGES = [
   "Other"
 ];
 
+const DREAM_JOBS = [
+  "Full Stack Developer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Mobile Developer",
+  "DevOps Engineer",
+  "Data Scientist",
+  "Machine Learning Engineer",
+  "AI Engineer",
+  "Cloud Architect",
+  "Security Engineer",
+  "Game Developer",
+  "UI/UX Designer",
+  "QA Engineer",
+  "Other"
+];
+
 const Personalize = () => {
   const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [selectedJob, setSelectedJob] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
 
@@ -42,11 +60,11 @@ const Personalize = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("main_language")
+        .select("main_language, dream_job")
         .eq("id", user.id)
         .single();
 
-      if (profile?.main_language) {
+      if (profile?.main_language && profile?.dream_job) {
         navigate("/upload");
       }
     } catch (error) {
@@ -61,6 +79,11 @@ const Personalize = () => {
       toast.error("Please select your main programming language");
       return;
     }
+    
+    if (!selectedJob) {
+      toast.error("Please select your dream job");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -71,7 +94,8 @@ const Personalize = () => {
         .from("profiles")
         .upsert({ 
           id: user.id,
-          main_language: selectedLanguage 
+          main_language: selectedLanguage,
+          dream_job: selectedJob
         });
 
       if (error) throw error;
@@ -123,9 +147,25 @@ const Personalize = () => {
             </div>
           </div>
 
+          <div>
+            <h3 className="text-lg font-semibold mb-4">What is your dream job?</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {DREAM_JOBS.map((job) => (
+                <Button
+                  key={job}
+                  variant={selectedJob === job ? "default" : "outline"}
+                  className="h-auto py-3 text-left justify-start"
+                  onClick={() => setSelectedJob(job)}
+                >
+                  {job}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <Button
             onClick={handleSubmit}
-            disabled={loading || !selectedLanguage}
+            disabled={loading || !selectedLanguage || !selectedJob}
             className="w-full"
             size="lg"
           >
