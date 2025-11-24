@@ -28,11 +28,11 @@ export default function Upload() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('main_language')
+        .select('main_language, dream_job')
         .eq('id', user.id)
         .single();
 
-      if (!profile?.main_language) {
+      if (!profile?.main_language || !profile?.dream_job) {
         navigate('/personalize');
       }
     } catch (error) {
@@ -129,10 +129,20 @@ export default function Upload() {
       if (skillsError) throw skillsError;
       setProgress(70);
 
-      // Call compare-skills function
+      // Get user's dream job
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('dream_job')
+        .eq('id', user.id)
+        .single();
+
+      // Call compare-skills function with dream job
       const { data: comparisonData, error: comparisonError } = await supabase.functions
         .invoke('compare-skills', {
-          body: { studentSkills: skillsData.skills }
+          body: { 
+            studentSkills: skillsData.skills,
+            dreamJob: profile?.dream_job
+          }
         });
 
       if (comparisonError) throw comparisonError;
@@ -274,7 +284,7 @@ export default function Upload() {
               <p className="font-medium">What happens next?</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>AI extracts all skills from your document</li>
-                <li>Compares against 1,491 real job market requirements</li>
+                <li>Compares against your dream job requirements</li>
                 <li>Identifies critical skill gaps and opportunities</li>
                 <li>Generates personalized learning roadmap</li>
               </ul>

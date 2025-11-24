@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.compare-skills]
 verify_jwt = false
+
+[functions.get-job-skills]
+verify_jwt = false

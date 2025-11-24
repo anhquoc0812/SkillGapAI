@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { studentSkills } = await req.json();
+    const { studentSkills, dreamJob } = await req.json();
     
     if (!Array.isArray(studentSkills)) {
       return new Response(
@@ -26,31 +26,38 @@ Deno.serve(async (req) => {
 
     console.log('Comparing skills against market data...');
 
-    // Load and parse market skills CSV
-    const csvUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/storage/v1/object/public/transcripts/market_skills.csv`;
-    
+    // If dream job is provided, get job-specific skills instead of market data
     let marketData: Map<string, number>;
-    try {
-      const csvResponse = await fetch(csvUrl);
-      if (!csvResponse.ok) {
-        // Fallback to hardcoded common market skills if CSV not accessible
-        marketData = new Map([
-          ["react", 450], ["javascript", 520], ["python", 380], ["java", 290],
-          ["sql", 410], ["docker", 220], ["aws", 310], ["git", 480],
-          ["typescript", 340], ["node.js", 280], ["communication", 560],
-          ["teamwork", 490], ["agile", 310], ["api", 390], ["testing", 270]
-        ]);
+    
+    if (dreamJob) {
+      console.log(`Using job-specific skills for: ${dreamJob}`);
+      
+      // Call get-job-skills function
+      const jobSkillsUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/get-job-skills`;
+      const jobSkillsResponse = await fetch(jobSkillsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.get('Authorization') || ''
+        },
+        body: JSON.stringify({ dreamJob })
+      });
+      
+      if (jobSkillsResponse.ok) {
+        const jobData = await jobSkillsResponse.json();
+        marketData = new Map();
+        
+        // Assign equal weight to all job-required skills
+        jobData.skills.forEach((skill: string) => {
+          marketData.set(skill.toLowerCase(), 100);
+        });
       } else {
-        const csvText = await csvResponse.text();
-        marketData = parseMarketSkills(csvText);
+        // Fallback to CSV data
+        marketData = await loadMarketData();
       }
-    } catch (e) {
-      console.error('Error loading market data:', e);
-      // Use fallback data
-      marketData = new Map([
-        ["react", 450], ["javascript", 520], ["python", 380], ["java", 290],
-        ["sql", 410], ["docker", 220], ["aws", 310], ["git", 480]
-      ]);
+    } else {
+      // Load and parse market skills CSV
+      marketData = await loadMarketData();
     }
 
     const totalJobs = 1491; // From your CSV
@@ -116,6 +123,31 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+async function loadMarketData(): Promise<Map<string, number>> {
+  const csvUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/storage/v1/object/public/transcripts/market_skills.csv`;
+  
+  try {
+    const csvResponse = await fetch(csvUrl);
+    if (!csvResponse.ok) {
+      return getFallbackMarketData();
+    }
+    const csvText = await csvResponse.text();
+    return parseMarketSkills(csvText);
+  } catch (e) {
+    console.error('Error loading market data:', e);
+    return getFallbackMarketData();
+  }
+}
+
+function getFallbackMarketData(): Map<string, number> {
+  return new Map([
+    ["react", 450], ["javascript", 520], ["python", 380], ["java", 290],
+    ["sql", 410], ["docker", 220], ["aws", 310], ["git", 480],
+    ["typescript", 340], ["node.js", 280], ["communication", 560],
+    ["teamwork", 490], ["agile", 310], ["api", 390], ["testing", 270]
+  ]);
+}
 
 function parseMarketSkills(csvText: string): Map<string, number> {
   const skills = new Map<string, number>();
