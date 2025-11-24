@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload as UploadIcon, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,37 @@ export default function Upload() {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [checkingProfile, setCheckingProfile] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkPersonalization();
+  }, []);
+
+  const checkPersonalization = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('main_language')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.main_language) {
+        navigate('/personalize');
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+    } finally {
+      setCheckingProfile(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -148,6 +177,14 @@ export default function Upload() {
       setProgress(0);
     }
   };
+
+  if (checkingProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-20">
