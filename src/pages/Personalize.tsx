@@ -69,8 +69,10 @@ const Personalize = () => {
 
       const { error } = await supabase
         .from("profiles")
-        .update({ main_language: selectedLanguage })
-        .eq("id", user.id);
+        .upsert({ 
+          id: user.id,
+          main_language: selectedLanguage 
+        });
 
       if (error) throw error;
 
