@@ -134,8 +134,8 @@ Look for these common transcript subjects:
 
 Extract both Vietnamese course names and their English equivalents. Also extract any technologies, tools, frameworks, or skills mentioned.
 
-Return ONLY a JSON array of extracted items in lowercase.
-Example: ["lập trình c++", "c++", "cấu trúc dữ liệu", "data structures", "hệ điều hành", "operating systems", "react", "sql"]`
+CRITICAL: Return ONLY a pure JSON array, no markdown formatting, no code blocks, no additional text.
+Example output format: ["lập trình c++", "c++", "cấu trúc dữ liệu", "data structures", "hệ điều hành", "operating systems", "react", "sql"]`
           },
           {
             role: 'user',
@@ -155,8 +155,13 @@ Example: ["lập trình c++", "c++", "cấu trúc dữ liệu", "data structures
     let extractedSkills: string[] = [];
     
     try {
-      const content = aiData.choices[0]?.message?.content || '[]';
+      let content = aiData.choices[0]?.message?.content || '[]';
+      
+      // Strip markdown code blocks if present
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
       extractedSkills = JSON.parse(content);
+      console.log('Extracted skills:', extractedSkills);
     } catch (e) {
       console.error('Failed to parse AI response:', e);
       // Fallback: try to extract skills from raw text
