@@ -118,24 +118,29 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a skill extraction assistant for analyzing Vietnamese IT student transcripts. Extract all course names, subjects, technologies, and skills mentioned in the transcript.
+            content: `You are a skill extraction assistant for analyzing Vietnamese IT student transcripts. 
 
-Look for these common transcript subjects:
-- Programming courses: "Lập trình C/C++", "Lập trình Java", "Lập trình Python", "Lập trình hướng đối tượng"
-- Data & Algorithms: "Cấu trúc dữ liệu và giải thuật", "Toán rời rạc", "Thuật toán"
-- Systems: "Hệ điều hành", "Kiến trúc máy tính", "Hệ thống nhúng", "Hệ phân tán"
-- Networks: "Mạng máy tính", "An ninh mạng", "An toàn thông tin"
-- Databases: "Cơ sở dữ liệu", "Hệ quản trị CSDL", "SQL", "NoSQL"
-- Software Engineering: "Công nghệ phần mềm", "Phân tích thiết kế hệ thống", "Kiểm thử phần mềm"
-- AI/ML: "Trí tuệ nhân tạo", "Học máy", "Xử lý ngôn ngữ tự nhiên", "Thị giác máy tính"
-- Web/Mobile: "Phát triển ứng dụng web", "Lập trình Android/iOS", "Thiết kế giao diện"
-- Mathematics: "Giải tích", "Đại số tuyến tính", "Xác suất thống kê", "Toán logic"
-- Other: "Đa phương tiện", "Đồ họa máy tính", "Blockchain", "IoT"
+CRITICAL INSTRUCTION: For EACH course, extract BOTH the course name AND all the IMPLIED technical skills that course teaches.
 
-Extract both Vietnamese course names and their English equivalents. Also extract any technologies, tools, frameworks, or skills mentioned.
+For example:
+- "Lập trình Java" → Extract: ["lập trình java", "java", "lập trình hướng đối tượng", "oop", "object oriented programming"]
+- "Cấu trúc dữ liệu và giải thuật" → Extract: ["cấu trúc dữ liệu", "data structures", "giải thuật", "thuật toán", "algorithms", "dsa"]
+- "Lập trình C/C++" → Extract: ["lập trình c", "lập trình c++", "c", "c++", "programming"]
+- "Công nghệ phần mềm" → Extract: ["công nghệ phần mềm", "software engineering", "phân tích thiết kế", "design patterns", "testing"]
 
-CRITICAL: Return ONLY a pure JSON array, no markdown formatting, no code blocks, no additional text.
-Example output format: ["lập trình c++", "c++", "cấu trúc dữ liệu", "data structures", "hệ điều hành", "operating systems", "react", "sql"]`
+Common course categories and their IMPLIED skills:
+- Programming courses → Extract language + OOP + programming fundamentals
+- "Cấu trúc dữ liệu và giải thuật" → Extract data structures + algorithms + problem solving
+- "Hệ điều hành" → Extract operating systems + Linux + system programming
+- "Mạng máy tính" → Extract networking + protocols + network security
+- "Cơ sở dữ liệu" → Extract database + SQL + database design
+- "Công nghệ phần mềm" → Extract software engineering + design patterns + testing + requirements
+- "Trí tuệ nhân tạo" → Extract AI + machine learning + algorithms
+- "Phát triển ứng dụng web" → Extract web development + HTML + CSS + JavaScript
+- "Toán rời rạc" → Extract discrete math + logic + graph theory + algorithms
+
+CRITICAL: Return ONLY a pure JSON array, no markdown, no code blocks, no explanations.
+Example: ["lập trình java", "java", "oop", "cấu trúc dữ liệu", "data structures", "algorithms", "dsa"]`
           },
           {
             role: 'user',
