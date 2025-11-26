@@ -144,7 +144,12 @@ export default function Results() {
 
         {/* Chart */}
         <Card className="p-8 mb-12">
-          <SkillGapChart data={analysis.market_skills} />
+          <SkillGapChart 
+            data={analysis.market_skills}
+            matchPercentage={analysis.match_percentage}
+            criticalGaps={analysis.skill_gaps.length}
+            marketReadiness={analysis.market_readiness}
+          />
         </Card>
 
         {/* Your Skills */}

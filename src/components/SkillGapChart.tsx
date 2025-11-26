@@ -11,9 +11,17 @@ const sampleData = [
 
 interface SkillGapChartProps {
   data?: any[];
+  matchPercentage?: number;
+  criticalGaps?: number;
+  marketReadiness?: number;
 }
 
-export const SkillGapChart = ({ data = sampleData }: SkillGapChartProps) => {
+export const SkillGapChart = ({ 
+  data = sampleData, 
+  matchPercentage = 68,
+  criticalGaps = 3,
+  marketReadiness = 85
+}: SkillGapChartProps) => {
   const chartData = data.length > 0 ? data : sampleData;
   return (
     <div className="w-full">
@@ -60,15 +68,15 @@ export const SkillGapChart = ({ data = sampleData }: SkillGapChartProps) => {
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-2xl font-bold text-primary">68%</div>
+          <div className="text-2xl font-bold text-primary">{matchPercentage}%</div>
           <div className="text-sm text-muted-foreground">Average Skill Match</div>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-2xl font-bold text-accent">3</div>
+          <div className="text-2xl font-bold text-accent">{criticalGaps}</div>
           <div className="text-sm text-muted-foreground">Critical Gaps Identified</div>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-2xl font-bold text-primary">85%</div>
+          <div className="text-2xl font-bold text-primary">{marketReadiness}%</div>
           <div className="text-sm text-muted-foreground">Market Readiness</div>
         </div>
       </div>
