@@ -1,12 +1,34 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, TrendingUp, Target, CheckCircle2, ArrowRight, BarChart3, Brain, Zap } from "lucide-react";
+import { Upload, TrendingUp, Target, CheckCircle2, ArrowRight, BarChart3, Brain, Zap, LogIn } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { SkillGapChart } from "@/components/SkillGapChart";
 import { FeatureCard } from "@/components/FeatureCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsAuthenticated(!!user);
+  };
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      navigate('/upload');
+    } else {
+      navigate('/auth');
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -38,12 +60,17 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col gap-4 sm:flex-row justify-center">
-              <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-shadow" onClick={() => window.location.href = '/upload'}>
-                Get Started <ArrowRight className="h-5 w-5" />
+              <Button size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-shadow" onClick={handleGetStarted}>
+                {isAuthenticated ? 'Upload Transcript' : 'Get Started'} <ArrowRight className="h-5 w-5" />
               </Button>
               <Button size="lg" variant="outline" className="gap-2" onClick={() => document.getElementById('sample-analysis')?.scrollIntoView({ behavior: 'smooth' })}>
                 View Demo <BarChart3 className="h-5 w-5" />
               </Button>
+              {!isAuthenticated && (
+                <Button size="lg" variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
+                  <LogIn className="h-5 w-5" /> Sign In
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -185,8 +212,8 @@ const Index = () => {
               <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
                 Join thousands of IT students who have transformed their careers with data-driven insights
               </p>
-              <Button size="lg" variant="secondary" className="gap-2 shadow-xl" onClick={() => window.location.href = '/upload'}>
-                Start Your Analysis <ArrowRight className="h-5 w-5" />
+              <Button size="lg" variant="secondary" className="gap-2 shadow-xl" onClick={handleGetStarted}>
+                {isAuthenticated ? 'Start Your Analysis' : 'Sign Up Now'} <ArrowRight className="h-5 w-5" />
               </Button>
             </div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
