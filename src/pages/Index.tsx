@@ -22,11 +22,26 @@ const Index = () => {
     setIsAuthenticated(!!user);
   };
 
-  const handleGetStarted = () => {
-    if (isAuthenticated) {
-      navigate('/upload');
-    } else {
-      navigate('/auth');
+  const handleGetStarted = async () => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
+    }
+
+    // Check if user has completed personalization
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("main_language, dream_job")
+        .eq("id", user.id)
+        .single();
+      
+      if (!profile?.main_language || !profile?.dream_job) {
+        navigate("/personalize");
+      } else {
+        navigate("/upload");
+      }
     }
   };
   return (
