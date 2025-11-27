@@ -52,11 +52,29 @@ export default function Auth() {
         });
         navigate('/personalize');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        
+        // Check if user has completed personalization
+        if (data.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('main_language, dream_job')
+            .eq('id', data.user.id)
+            .single();
+          
+          if (!profile?.main_language || !profile?.dream_job) {
+            toast({
+              title: "Welcome back!",
+              description: "Please complete your profile"
+            });
+            navigate('/personalize');
+            return;
+          }
+        }
         
         toast({
           title: "Welcome back!",
