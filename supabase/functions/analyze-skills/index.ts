@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { transcriptText } = await req.json();
+    const { transcriptText, mainLanguage } = await req.json();
     
     if (!transcriptText || typeof transcriptText !== 'string') {
       return new Response(
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Analyzing transcript with AI...');
+    console.log(`Analyzing transcript with AI (main language: ${mainLanguage})...`);
     
     // Use Lovable AI to extract skills from transcript
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a skill extraction assistant for analyzing Vietnamese IT student transcripts. 
+            content: `You are a skill extraction assistant for analyzing Vietnamese IT student transcripts.${mainLanguage ? ` The student's main programming language is ${mainLanguage}, so pay special attention to skills related to ${mainLanguage} and its ecosystem.` : ''}
 
 CRITICAL INSTRUCTION: For EACH course, extract BOTH the course name AND all the IMPLIED technical skills that course teaches.
 

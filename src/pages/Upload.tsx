@@ -120,21 +120,24 @@ export default function Upload() {
       const transcriptText = await extractTextFromFile(file);
       setProgress(50);
 
-      // Call analyze-skills function
+      // Get user's personalization settings
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('dream_job, main_language')
+        .eq('id', user.id)
+        .single();
+
+      // Call analyze-skills function with personalization
       const { data: skillsData, error: skillsError } = await supabase.functions
         .invoke('analyze-skills', {
-          body: { transcriptText }
+          body: { 
+            transcriptText,
+            mainLanguage: profile?.main_language
+          }
         });
 
       if (skillsError) throw skillsError;
       setProgress(70);
-
-      // Get user's dream job
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('dream_job')
-        .eq('id', user.id)
-        .single();
 
       // Call compare-skills function with dream job
       const { data: comparisonData, error: comparisonError } = await supabase.functions
