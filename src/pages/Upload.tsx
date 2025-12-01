@@ -19,9 +19,13 @@ export default function Upload() {
   }, []);
 
   const checkPersonalization = async () => {
+    console.log('[Upload] Checking personalization...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('[Upload] User:', user?.id);
+      
       if (!user) {
+        console.log('[Upload] No user, redirecting to /auth');
         navigate('/auth');
         return;
       }
@@ -32,13 +36,19 @@ export default function Upload() {
         .eq('id', user.id)
         .maybeSingle();
 
+      console.log('[Upload] Profile data:', profile);
+      console.log('[Upload] Profile error:', error);
+
       // If no profile exists or fields are missing, go to personalize
       if (!profile || !profile.main_language || !profile.dream_job) {
+        console.log('[Upload] Profile incomplete, redirecting to /personalize');
         navigate('/personalize');
         return;
       }
+      
+      console.log('[Upload] Profile complete, staying on upload page');
     } catch (error) {
-      console.error('Error checking profile:', error);
+      console.error('[Upload] Error checking profile:', error);
       navigate('/personalize');
     } finally {
       setCheckingProfile(false);

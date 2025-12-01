@@ -51,24 +51,34 @@ const Personalize = () => {
   }, []);
 
   const checkExistingProfile = async () => {
+    console.log('[Personalize] Checking existing profile...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('[Personalize] User:', user?.id);
+      
       if (!user) {
+        console.log('[Personalize] No user, redirecting to /auth');
         navigate("/auth");
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("main_language, dream_job")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('[Personalize] Profile data:', profile);
+      console.log('[Personalize] Profile error:', error);
 
       if (profile?.main_language && profile?.dream_job) {
+        console.log('[Personalize] Profile complete, redirecting to /upload');
         navigate("/upload");
+      } else {
+        console.log('[Personalize] Profile incomplete, staying on personalize page');
       }
     } catch (error) {
-      console.error("Error checking profile:", error);
+      console.error("[Personalize] Error checking profile:", error);
     } finally {
       setCheckingProfile(false);
     }
