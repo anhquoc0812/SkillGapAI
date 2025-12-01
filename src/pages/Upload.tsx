@@ -26,17 +26,20 @@ export default function Upload() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('main_language, dream_job')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.main_language || !profile?.dream_job) {
+      // If no profile exists or fields are missing, go to personalize
+      if (!profile || !profile.main_language || !profile.dream_job) {
         navigate('/personalize');
+        return;
       }
     } catch (error) {
       console.error('Error checking profile:', error);
+      navigate('/personalize');
     } finally {
       setCheckingProfile(false);
     }
