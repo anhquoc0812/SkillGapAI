@@ -4,8 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, TrendingUp, Calendar, ArrowRight } from "lucide-react";
+import { Loader2, FileText, Calendar, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 
 interface Analysis {
@@ -55,6 +66,23 @@ const History = () => {
     if (readiness >= 80) return "bg-green-500/10 text-green-700 dark:text-green-400";
     if (readiness >= 60) return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
     return "bg-red-500/10 text-red-700 dark:text-red-400";
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("skill_analyses")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setAnalyses(analyses.filter((a) => a.id !== id));
+      toast.success("Analysis deleted successfully");
+    } catch (error) {
+      console.error("Error deleting analysis:", error);
+      toast.error("Failed to delete analysis");
+    }
   };
 
   if (loading) {
@@ -121,17 +149,48 @@ const History = () => {
                       <span className="text-sm text-muted-foreground">Skill Gaps</span>
                       <span className="font-semibold">{analysis.skill_gaps?.length || 0}</span>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full mt-2 gap-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/results/${analysis.id}`);
-                      }}
-                    >
-                      View Details <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/results/${analysis.id}`);
+                        }}
+                      >
+                        View Details <ArrowRight className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this analysis? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(analysis.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
