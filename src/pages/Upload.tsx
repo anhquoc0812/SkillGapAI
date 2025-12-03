@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload as UploadIcon, FileText, Loader2 } from 'lucide-react';
+import { Upload as UploadIcon, FileText, Loader2, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface UserProfile {
+  main_language: string | null;
+  dream_job: string | null;
+}
 
 export default function Upload() {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -19,36 +25,29 @@ export default function Upload() {
   }, []);
 
   const checkPersonalization = async () => {
-    console.log('[Upload] Checking personalization...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('[Upload] User:', user?.id);
       
       if (!user) {
-        console.log('[Upload] No user, redirecting to /auth');
         navigate('/auth');
         return;
       }
 
-      const { data: profile, error } = await supabase
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('main_language, dream_job')
         .eq('id', user.id)
         .maybeSingle();
 
-      console.log('[Upload] Profile data:', profile);
-      console.log('[Upload] Profile error:', error);
-
       // If no profile exists or fields are missing, go to personalize
-      if (!profile || !profile.main_language || !profile.dream_job) {
-        console.log('[Upload] Profile incomplete, redirecting to /personalize');
+      if (!profileData || !profileData.main_language || !profileData.dream_job) {
         navigate('/personalize');
         return;
       }
       
-      console.log('[Upload] Profile complete, staying on upload page');
+      setProfile(profileData);
     } catch (error) {
-      console.error('[Upload] Error checking profile:', error);
+      console.error('Error checking profile:', error);
       navigate('/personalize');
     } finally {
       setCheckingProfile(false);
@@ -58,7 +57,6 @@ export default function Upload() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Validate file type
       const validTypes = ['application/pdf', 'text/plain', 'application/msword', 
                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                           'text/csv'];
@@ -72,7 +70,7 @@ export default function Upload() {
         return;
       }
 
-      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+      if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Please upload a file smaller than 10MB",
@@ -91,8 +89,6 @@ export default function Upload() {
     }
     
     if (file.type === 'application/pdf') {
-      // For PDF, we'll send the file as-is and let backend handle it
-      // For now, return a placeholder - you can add PDF.js library if needed
       return `[PDF file: ${file.name}] - Upload for full text extraction`;
     }
     
@@ -106,7 +102,6 @@ export default function Upload() {
     setProgress(10);
 
     try {
-      // Check authentication
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -120,7 +115,6 @@ export default function Upload() {
 
       setProgress(20);
 
-      // Upload file to storage
       const fileName = `${user.id}/${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('transcripts')
@@ -129,16 +123,8 @@ export default function Upload() {
       if (uploadError) throw uploadError;
       setProgress(40);
 
-      // Extract text from file
       const transcriptText = await extractTextFromFile(file);
       setProgress(50);
-
-      // Get user's personalization settings
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('dream_job, main_language')
-        .eq('id', user.id)
-        .single();
 
       // Call analyze-skills function with personalization
       const { data: skillsData, error: skillsError } = await supabase.functions
@@ -164,7 +150,6 @@ export default function Upload() {
       if (comparisonError) throw comparisonError;
       setProgress(90);
 
-      // Save analysis result
       const { data: analysisData, error: insertError } = await supabase
         .from('skill_analyses')
         .insert({
@@ -188,7 +173,6 @@ export default function Upload() {
         description: `Found ${skillsData.skills.length} skills with ${comparisonData.matchPercentage}% market match`
       });
 
-      // Navigate to results
       navigate(`/results/${analysisData.id}`);
 
     } catch (error) {
@@ -221,6 +205,36 @@ export default function Upload() {
             Upload your academic transcript or resume to discover your skill gaps
           </p>
         </div>
+
+        {/* Current Preferences Card */}
+        <Card className="p-6 mb-6 border-primary/20 bg-primary/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                <Settings2 className="h-5 w-5 text-primary" />
+                Analysis Settings
+              </h3>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>
+                  <span className="font-medium text-foreground">Main Language:</span> {profile?.main_language}
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Dream Job:</span> {profile?.dream_job}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Your transcript will be analyzed based on skills required for <strong>{profile?.dream_job}</strong>
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/personalize')}
+            >
+              Change
+            </Button>
+          </div>
+        </Card>
 
         <Card className="p-8">
           <div className="space-y-6">
@@ -300,7 +314,7 @@ export default function Upload() {
               <p className="font-medium">What happens next?</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>AI extracts all skills from your document</li>
-                <li>Compares against your dream job requirements</li>
+                <li>Compares against <strong>{profile?.dream_job}</strong> requirements</li>
                 <li>Identifies critical skill gaps and opportunities</li>
                 <li>Generates personalized learning roadmap</li>
               </ul>

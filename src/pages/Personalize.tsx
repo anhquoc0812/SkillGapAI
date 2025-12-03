@@ -51,13 +51,10 @@ const Personalize = () => {
   }, []);
 
   const checkExistingProfile = async () => {
-    console.log('[Personalize] Checking existing profile...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('[Personalize] User:', user?.id);
       
       if (!user) {
-        console.log('[Personalize] No user, redirecting to /auth');
         navigate("/auth");
         return;
       }
@@ -68,17 +65,15 @@ const Personalize = () => {
         .eq("id", user.id)
         .maybeSingle();
 
-      console.log('[Personalize] Profile data:', profile);
-      console.log('[Personalize] Profile error:', error);
-
-      if (profile?.main_language && profile?.dream_job) {
-        console.log('[Personalize] Profile complete, redirecting to /upload');
-        navigate("/upload");
-      } else {
-        console.log('[Personalize] Profile incomplete, staying on personalize page');
+      // Pre-fill existing values if they exist (allow editing)
+      if (profile?.main_language) {
+        setSelectedLanguage(profile.main_language);
+      }
+      if (profile?.dream_job) {
+        setSelectedJob(profile.dream_job);
       }
     } catch (error) {
-      console.error("[Personalize] Error checking profile:", error);
+      console.error("Error checking profile:", error);
     } finally {
       setCheckingProfile(false);
     }
@@ -135,9 +130,14 @@ const Personalize = () => {
           <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <Code2 className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-3xl">Welcome! Let's Get Started</CardTitle>
+          <CardTitle className="text-3xl">
+            {selectedLanguage || selectedJob ? "Update Your Preferences" : "Welcome! Let's Get Started"}
+          </CardTitle>
           <CardDescription className="text-base">
-            Help us personalize your experience by telling us about your programming background
+            {selectedLanguage || selectedJob 
+              ? "Update your settings to personalize your transcript analysis"
+              : "Help us personalize your experience by telling us about your programming background"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
