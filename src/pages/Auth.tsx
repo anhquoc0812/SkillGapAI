@@ -18,8 +18,40 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/profile`
+    });
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We sent you a password reset link"
+      });
+      setShowForgotPassword(false);
+    }
+  };
 
   const handleAuth = async (type: 'signin' | 'signup') => {
     try {
@@ -131,13 +163,47 @@ export default function Auth() {
                 disabled={loading}
               />
             </div>
-            <Button 
-              className="w-full" 
-              onClick={() => handleAuth('signin')}
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
+            {showForgotPassword ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Enter your email above and we'll send you a reset link.
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    className="flex-1" 
+                    onClick={() => setShowForgotPassword(false)}
+                    disabled={loading}
+                  >
+                    Back
+                  </Button>
+                  <Button 
+                    className="flex-1" 
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleAuth('signin')}
+                  disabled={loading}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot password?
+                </button>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4">
