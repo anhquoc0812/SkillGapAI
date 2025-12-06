@@ -33,23 +33,40 @@ export default function Auth() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/profile`
-    });
-    setLoading(false);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
+    
+    try {
+      // Use Supabase's built-in reset which will redirect to our reset page
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
-    } else {
+
+      if (error) throw error;
+
+      // Also send custom branded email via our edge function
+      const response = await supabase.functions.invoke('send-password-reset', {
+        body: { 
+          email, 
+          resetLink: `${window.location.origin}/reset-password`
+        }
+      });
+
+      if (response.error) {
+        console.warn("Custom email failed, but default email was sent:", response.error);
+      }
+
       toast({
         title: "Check your email",
         description: "We sent you a password reset link"
       });
       setShowForgotPassword(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send reset email",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
