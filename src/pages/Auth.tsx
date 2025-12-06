@@ -35,14 +35,16 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // Use Supabase's built-in reset which will redirect to our reset page
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // Generate reset token via Supabase (but don't use their email)
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
 
       if (error) throw error;
 
-      // Also send custom branded email via our edge function
+      // Send ONLY our custom branded email via edge function
+      // Note: Supabase still sends its email, but we'll disable that in auth settings
+      // For now, both emails are sent - user will see our branded one from Resend
       const response = await supabase.functions.invoke('send-password-reset', {
         body: { 
           email, 
@@ -51,7 +53,8 @@ export default function Auth() {
       });
 
       if (response.error) {
-        console.warn("Custom email failed, but default email was sent:", response.error);
+        console.error("Custom email failed:", response.error);
+        throw new Error("Failed to send reset email");
       }
 
       toast({
