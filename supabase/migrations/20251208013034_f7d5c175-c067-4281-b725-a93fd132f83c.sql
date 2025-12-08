@@ -1,0 +1,1 @@
+DROP POLICY "Anyone can validate tokens" ON password_reset_tokens;
