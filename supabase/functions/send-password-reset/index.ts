@@ -1,17 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface PasswordResetRequest {
   email: string;
-  resetLink: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -21,43 +20,103 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, resetLink }: PasswordResetRequest = await req.json();
+    const { email }: PasswordResetRequest = await req.json();
 
-    console.log(`Sending password reset email to: ${email}`);
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Email is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
+    console.log("Processing password reset for:", email);
+
+    // Create Supabase admin client
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Check if user exists
+    const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (userError) {
+      console.error("Error checking user:", userError);
+      // Don't reveal if user exists or not for security
+      return new Response(
+        JSON.stringify({ success: true, message: "If the email exists, a reset link will be sent" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const user = users.users.find(u => u.email === email);
+    
+    if (!user) {
+      console.log("User not found, returning success anyway for security");
+      return new Response(
+        JSON.stringify({ success: true, message: "If the email exists, a reset link will be sent" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Generate a secure token
+    const token = crypto.randomUUID() + crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Store token in database
+    const { error: insertError } = await supabaseAdmin
+      .from("password_reset_tokens")
+      .insert({
+        user_id: user.id,
+        email: email,
+        token: token,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (insertError) {
+      console.error("Error storing reset token:", insertError);
+      throw new Error("Failed to generate reset token");
+    }
+
+    // Build reset link with our custom token
+    const origin = req.headers.get("origin") || "https://skill-gap-ai.lovable.app";
+    const resetLink = `${origin}/reset-password?token=${token}`;
+
+    console.log("Generated reset link for user:", user.id);
+
+    // Send custom branded email via Resend API
     const emailHtml = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a;">
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
           <tr>
-            <td align="center" style="padding: 40px 20px;">
-              <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0a 100%); border-radius: 16px; border: 1px solid #333;">
-                
-                <!-- Header with Logo -->
+            <td align="center" style="padding: 40px 0;">
+              <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0a 100%); border-radius: 16px; border: 1px solid #333;">
+                <!-- Header -->
                 <tr>
-                  <td align="center" style="padding: 40px 40px 20px;">
-                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-radius: 12px; margin-bottom: 20px;"></div>
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">Skill Gap AI</h1>
+                  <td style="padding: 40px 40px 20px; text-align: center;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-radius: 12px; margin: 0 auto 20px;"></div>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">Skill Gap AI</h1>
                   </td>
                 </tr>
                 
-                <!-- Main Content -->
+                <!-- Content -->
                 <tr>
                   <td style="padding: 20px 40px 40px;">
-                    <h2 style="margin: 0 0 16px; color: #ffffff; font-size: 22px; font-weight: 600; text-align: center;">Reset Your Password</h2>
-                    <p style="margin: 0 0 24px; color: #a1a1aa; font-size: 16px; line-height: 1.6; text-align: center;">
-                      We received a request to reset your password. Click the button below to create a new password.
+                    <h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 600; color: #ffffff; text-align: center;">Reset Your Password</h2>
+                    <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #a1a1aa; text-align: center;">
+                      We received a request to reset the password for your Skill Gap AI account. Click the button below to set a new password:
                     </p>
                     
-                    <!-- CTA Button -->
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
                       <tr>
-                        <td align="center" style="padding: 20px 0;">
+                        <td align="center" style="padding: 24px 0;">
                           <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                             Reset Password
                           </a>
@@ -65,25 +124,27 @@ const handler = async (req: Request): Promise<Response> => {
                       </tr>
                     </table>
                     
-                    <p style="margin: 24px 0 0; color: #71717a; font-size: 14px; line-height: 1.6; text-align: center;">
-                      If you didn't request a password reset, you can safely ignore this email. The link will expire in 1 hour.
+                    <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #71717a; text-align: center;">
+                      This link will expire in <strong style="color: #a1a1aa;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
                     </p>
                     
-                    <p style="margin: 16px 0 0; color: #52525b; font-size: 12px; text-align: center; word-break: break-all;">
-                      Or copy this link: ${resetLink}
+                    <hr style="margin: 32px 0; border: none; border-top: 1px solid #333;">
+                    
+                    <p style="margin: 0; font-size: 12px; color: #52525b; text-align: center;">
+                      If the button doesn't work, copy and paste this link into your browser:<br>
+                      <a href="${resetLink}" style="color: #8b5cf6; word-break: break-all;">${resetLink}</a>
                     </p>
                   </td>
                 </tr>
                 
                 <!-- Footer -->
                 <tr>
-                  <td style="padding: 20px 40px; border-top: 1px solid #333;">
-                    <p style="margin: 0; color: #52525b; font-size: 12px; text-align: center;">
-                      © 2024 Skill Gap AI. All rights reserved.
+                  <td style="padding: 20px 40px; border-top: 1px solid #333; text-align: center;">
+                    <p style="margin: 0; font-size: 12px; color: #52525b;">
+                      © ${new Date().getFullYear()} Skill Gap AI. All rights reserved.
                     </p>
                   </td>
                 </tr>
-                
               </table>
             </td>
           </tr>
@@ -106,14 +167,17 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
-    const data = await emailResponse.json();
+    const emailData = await emailResponse.json();
 
-    console.log("Email sent successfully:", data);
+    console.log("Email sent successfully:", emailData);
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ success: true, message: "Password reset email sent" }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   } catch (error: any) {
     console.error("Error in send-password-reset function:", error);
     return new Response(

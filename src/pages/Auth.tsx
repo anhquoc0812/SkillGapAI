@@ -35,21 +35,10 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      // Generate reset token via Supabase (but don't use their email)
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) throw error;
-
       // Send ONLY our custom branded email via edge function
-      // Note: Supabase still sends its email, but we'll disable that in auth settings
-      // For now, both emails are sent - user will see our branded one from Resend
+      // This generates its own token and doesn't use Supabase's email
       const response = await supabase.functions.invoke('send-password-reset', {
-        body: { 
-          email, 
-          resetLink: `${window.location.origin}/reset-password`
-        }
+        body: { email }
       });
 
       if (response.error) {
