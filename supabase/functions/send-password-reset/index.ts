@@ -13,6 +13,11 @@ interface PasswordResetRequest {
   email: string;
 }
 
+// Generate a 6-digit OTP
+function generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -45,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error checking user:", userError);
       // Don't reveal if user exists or not for security
       return new Response(
-        JSON.stringify({ success: true, message: "If the email exists, a reset link will be sent" }),
+        JSON.stringify({ success: true, message: "If the email exists, an OTP will be sent" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -55,37 +60,40 @@ const handler = async (req: Request): Promise<Response> => {
     if (!user) {
       console.log("User not found, returning success anyway for security");
       return new Response(
-        JSON.stringify({ success: true, message: "If the email exists, a reset link will be sent" }),
+        JSON.stringify({ success: true, message: "If the email exists, an OTP will be sent" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Generate a secure token
-    const token = crypto.randomUUID() + crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    // Generate a 6-digit OTP
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Store token in database
+    // Invalidate any existing unused tokens for this email
+    await supabaseAdmin
+      .from("password_reset_tokens")
+      .update({ used: true })
+      .eq("email", email)
+      .eq("used", false);
+
+    // Store OTP in database
     const { error: insertError } = await supabaseAdmin
       .from("password_reset_tokens")
       .insert({
         user_id: user.id,
         email: email,
-        token: token,
+        token: otp,
         expires_at: expiresAt.toISOString()
       });
 
     if (insertError) {
-      console.error("Error storing reset token:", insertError);
-      throw new Error("Failed to generate reset token");
+      console.error("Error storing OTP:", insertError);
+      throw new Error("Failed to generate OTP");
     }
 
-    // Build reset link with our custom token
-    const origin = req.headers.get("origin") || "https://skill-gap-ai.lovable.app";
-    const resetLink = `${origin}/reset-password?token=${token}`;
+    console.log("Generated OTP for user:", user.id);
 
-    console.log("Generated reset link for user:", user.id);
-
-    // Send custom branded email via Resend API
+    // Send OTP email via Resend API
     const emailHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -109,30 +117,29 @@ const handler = async (req: Request): Promise<Response> => {
                 <!-- Content -->
                 <tr>
                   <td style="padding: 20px 40px 40px;">
-                    <h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 600; color: #ffffff; text-align: center;">Reset Your Password</h2>
+                    <h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 600; color: #ffffff; text-align: center;">Your Verification Code</h2>
                     <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #a1a1aa; text-align: center;">
-                      We received a request to reset the password for your Skill Gap AI account. Click the button below to set a new password:
+                      Use the following code to reset your password:
                     </p>
                     
                     <table role="presentation" style="width: 100%; border-collapse: collapse;">
                       <tr>
                         <td align="center" style="padding: 24px 0;">
-                          <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                            Reset Password
-                          </a>
+                          <div style="display: inline-block; padding: 20px 40px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2)); border: 2px solid #8b5cf6; border-radius: 12px;">
+                            <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #ffffff;">${otp}</span>
+                          </div>
                         </td>
                       </tr>
                     </table>
                     
                     <p style="margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: #71717a; text-align: center;">
-                      This link will expire in <strong style="color: #a1a1aa;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
+                      This code will expire in <strong style="color: #a1a1aa;">10 minutes</strong>. If you didn't request a password reset, you can safely ignore this email.
                     </p>
                     
                     <hr style="margin: 32px 0; border: none; border-top: 1px solid #333;">
                     
                     <p style="margin: 0; font-size: 12px; color: #52525b; text-align: center;">
-                      If the button doesn't work, copy and paste this link into your browser:<br>
-                      <a href="${resetLink}" style="color: #8b5cf6; word-break: break-all;">${resetLink}</a>
+                      Do not share this code with anyone. Our team will never ask for your code.
                     </p>
                   </td>
                 </tr>
@@ -162,17 +169,17 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Skill Gap AI <onboarding@resend.dev>",
         to: [email],
-        subject: "Reset Your Password - Skill Gap AI",
+        subject: "Your Password Reset Code - Skill Gap AI",
         html: emailHtml,
       }),
     });
 
     const emailData = await emailResponse.json();
 
-    console.log("Email sent successfully:", emailData);
+    console.log("OTP email sent successfully:", emailData);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Password reset email sent" }),
+      JSON.stringify({ success: true, message: "OTP sent to your email" }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },

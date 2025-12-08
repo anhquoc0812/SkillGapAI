@@ -7,10 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface ResetPasswordRequest {
+interface VerifyOtpRequest {
   email: string;
   otp: string;
-  newPassword: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,23 +19,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, otp, newPassword }: ResetPasswordRequest = await req.json();
+    const { email, otp }: VerifyOtpRequest = await req.json();
 
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp) {
       return new Response(
-        JSON.stringify({ error: "Email, OTP, and new password are required" }),
+        JSON.stringify({ error: "Email and OTP are required" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    if (newPassword.length < 6) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log("Processing password reset for:", email);
+    console.log("Verifying OTP for:", email);
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -72,34 +64,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Update the user's password
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      tokenData.user_id,
-      { password: newPassword }
-    );
-
-    if (updateError) {
-      console.error("Error updating password:", updateError);
-      throw new Error("Failed to update password");
-    }
-
-    // Mark OTP as used
-    await supabaseAdmin
-      .from("password_reset_tokens")
-      .update({ used: true })
-      .eq("id", tokenData.id);
-
-    console.log("Password reset successful for user:", tokenData.user_id);
+    console.log("OTP verified successfully for:", email);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Password updated successfully" }),
+      JSON.stringify({ success: true, message: "OTP verified" }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   } catch (error: any) {
-    console.error("Error in reset-password function:", error);
+    console.error("Error in verify-otp function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
