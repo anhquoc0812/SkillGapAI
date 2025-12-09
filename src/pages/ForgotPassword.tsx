@@ -1,20 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, CheckCircle, Mail, KeyRound, Lock, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, Mail, Lock, ArrowLeft } from 'lucide-react';
 
-type Step = 'email' | 'otp' | 'password' | 'success';
+type Step = 'email' | 'password' | 'success';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +20,19 @@ export default function ForgotPassword() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOtp = async () => {
+  // Check if user came from password reset link
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    if (accessToken && type === 'recovery') {
+      // User clicked the reset link - go to password step
+      setStep('password');
+    }
+  }, []);
+
+  const handleSendResetLink = async () => {
     if (!email) {
       toast({
         title: "Email required",
@@ -35,65 +45,22 @@ export default function ForgotPassword() {
     setLoading(true);
     
     try {
-      const response = await supabase.functions.invoke('send-password-reset', {
-        body: { email }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/forgot-password`,
       });
 
-      if (response.error) {
-        throw new Error("Failed to send OTP");
+      if (error) {
+        throw error;
       }
 
       toast({
-        title: "OTP Sent",
-        description: "Check your email for the 6-digit code"
+        title: "Reset Link Sent",
+        description: "Check your email for the password reset link"
       });
-      setStep('otp');
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send OTP",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit code",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await supabase.functions.invoke('verify-otp', {
-        body: { email, otp }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Invalid OTP");
-      }
-
-      const data = response.data;
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      toast({
-        title: "OTP Verified",
-        description: "You can now set your new password"
-      });
-      setStep('password');
-    } catch (error) {
-      toast({
-        title: "Verification Failed",
-        description: error instanceof Error ? error.message : "Invalid or expired OTP",
+        description: error instanceof Error ? error.message : "Failed to send reset link",
         variant: "destructive"
       });
     } finally {
@@ -123,17 +90,12 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await supabase.functions.invoke('reset-password', {
-        body: { email, otp, newPassword: password }
+      const { error } = await supabase.auth.updateUser({
+        password: password
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to reset password");
-      }
-
-      const data = response.data;
-      if (data.error) {
-        throw new Error(data.error);
+      if (error) {
+        throw error;
       }
 
       setStep('success');
@@ -142,6 +104,8 @@ export default function ForgotPassword() {
         description: "Your password has been reset successfully"
       });
       
+      // Sign out and redirect to auth
+      await supabase.auth.signOut();
       setTimeout(() => {
         navigate('/auth');
       }, 2000);
@@ -149,33 +113,6 @@ export default function ForgotPassword() {
       toast({
         title: "Reset Failed",
         description: error instanceof Error ? error.message : "Unable to reset password",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setLoading(true);
-    try {
-      const response = await supabase.functions.invoke('send-password-reset', {
-        body: { email }
-      });
-
-      if (response.error) {
-        throw new Error("Failed to resend OTP");
-      }
-
-      toast({
-        title: "OTP Resent",
-        description: "Check your email for the new 6-digit code"
-      });
-      setOtp('');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to resend OTP",
         variant: "destructive"
       });
     } finally {
@@ -207,17 +144,14 @@ export default function ForgotPassword() {
         <CardHeader className="text-center">
           <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center mx-auto mb-4">
             {step === 'email' && <Mail className="w-6 h-6 text-primary-foreground" />}
-            {step === 'otp' && <KeyRound className="w-6 h-6 text-primary-foreground" />}
             {step === 'password' && <Lock className="w-6 h-6 text-primary-foreground" />}
           </div>
           <CardTitle className="text-2xl">
             {step === 'email' && 'Forgot Password'}
-            {step === 'otp' && 'Enter OTP'}
             {step === 'password' && 'Reset Password'}
           </CardTitle>
           <CardDescription>
-            {step === 'email' && 'Enter your email to receive a verification code'}
-            {step === 'otp' && `Enter the 6-digit code sent to ${email}`}
+            {step === 'email' && 'Enter your email to receive a password reset link'}
             {step === 'password' && 'Create your new password'}
           </CardDescription>
         </CardHeader>
@@ -238,48 +172,11 @@ export default function ForgotPassword() {
               </div>
               <Button 
                 className="w-full" 
-                onClick={handleSendOtp}
+                onClick={handleSendResetLink}
                 disabled={loading}
               >
-                {loading ? 'Sending...' : 'Send OTP'}
+                {loading ? 'Sending...' : 'Send Reset Link'}
               </Button>
-            </>
-          )}
-
-          {step === 'otp' && (
-            <>
-              <div className="flex justify-center">
-                <InputOTP 
-                  maxLength={6} 
-                  value={otp} 
-                  onChange={setOtp}
-                  disabled={loading}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handleVerifyOtp}
-                disabled={loading || otp.length !== 6}
-              >
-                {loading ? 'Verifying...' : 'Verify OTP'}
-              </Button>
-              <button
-                type="button"
-                className="w-full text-sm text-muted-foreground hover:text-primary transition-colors"
-                onClick={handleResendOtp}
-                disabled={loading}
-              >
-                Didn't receive the code? Resend
-              </button>
             </>
           )}
 
