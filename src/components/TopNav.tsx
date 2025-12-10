@@ -1,4 +1,4 @@
-import { Home, Upload, History, LogIn, LogOut, User, Settings } from "lucide-react";
+import { Upload, History, LogIn, LogOut, User, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -43,12 +43,19 @@ export function TopNav() {
           <div className="flex items-center gap-6">
             <NavLink 
               to="/" 
-              className="flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors"
-              activeClassName="text-primary"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              activeClassName=""
               end
             >
-              <Home className="h-5 w-5" />
-              <span className="hidden sm:inline">Home</span>
+              <div className="flex items-center gap-1.5">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-sm">SG</span>
+                </div>
+                <span className="font-bold text-lg tracking-tight">
+                  <span className="text-primary">Skill</span>
+                  <span className="text-foreground">Gap</span>
+                </span>
+              </div>
             </NavLink>
 
             {isAuthenticated && (
