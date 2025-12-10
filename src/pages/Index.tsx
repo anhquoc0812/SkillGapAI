@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, TrendingUp, Target, CheckCircle2, ArrowRight, BarChart3, Brain, Zap, LogIn } from "lucide-react";
+import { Upload, TrendingUp, Target, CheckCircle2, ArrowRight, BarChart3, Brain, Zap } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { SkillGapChart } from "@/components/SkillGapChart";
 import { FeatureCard } from "@/components/FeatureCard";
@@ -81,11 +81,6 @@ const Index = () => {
               <Button size="lg" variant="outline" className="gap-2" onClick={() => document.getElementById('sample-analysis')?.scrollIntoView({ behavior: 'smooth' })}>
                 View Demo <BarChart3 className="h-5 w-5" />
               </Button>
-              {!isAuthenticated && (
-                <Button size="lg" variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
-                  <LogIn className="h-5 w-5" /> Sign In
-                </Button>
-              )}
             </div>
           </div>
         </div>
