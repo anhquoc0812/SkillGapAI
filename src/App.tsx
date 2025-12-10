@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
+import { ChatBot } from "@/components/ChatBot";
 import Index from "./pages/Index";
 import Upload from "./pages/Upload";
 import Results from "./pages/Results";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          <ChatBot />
         </div>
       </BrowserRouter>
     </TooltipProvider>

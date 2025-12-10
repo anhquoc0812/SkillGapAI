@@ -9,11 +9,5 @@ verify_jwt = false
 [functions.get-job-skills]
 verify_jwt = false
 
-[functions.send-password-reset]
-verify_jwt = false
-
-[functions.reset-password]
-verify_jwt = false
-
-[functions.verify-otp]
+[functions.chat]
 verify_jwt = false
