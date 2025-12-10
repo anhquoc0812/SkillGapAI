@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logoImage from "@/assets/logo.png";
 
 export function TopNav() {
   const navigate = useNavigate();
@@ -47,10 +48,8 @@ export function TopNav() {
               activeClassName=""
               end
             >
-              <div className="flex items-center gap-1.5">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">SG</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <img src={logoImage} alt="SkillGap AI Logo" className="h-9 w-auto" />
                 <span className="font-bold text-lg tracking-tight">
                   <span className="text-primary">Skill</span>
                   <span className="text-foreground">Gap</span>
