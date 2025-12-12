@@ -15,6 +15,19 @@ const authSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+const getPasswordStrength = (password: string): { level: 'weak' | 'medium' | 'strong'; label: string; color: string } => {
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 8) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+  if (score <= 2) return { level: 'weak', label: 'Weak', color: 'bg-destructive' };
+  if (score <= 3) return { level: 'medium', label: 'Medium', color: 'bg-yellow-500' };
+  return { level: 'strong', label: 'Strong', color: 'bg-green-500' };
+};
+
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +35,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const passwordStrength = getPasswordStrength(password);
 
   const handleAuth = async (type: 'signin' | 'signup') => {
     try {
@@ -191,9 +206,23 @@ export default function Auth() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Must be at least 6 characters
-              </p>
+              {password && (
+                <div className="space-y-1">
+                  <div className="flex gap-1">
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${password.length > 0 ? passwordStrength.color : 'bg-muted'}`} />
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level !== 'weak' ? passwordStrength.color : 'bg-muted'}`} />
+                    <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength.level === 'strong' ? passwordStrength.color : 'bg-muted'}`} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Password strength: <span className={passwordStrength.level === 'weak' ? 'text-destructive' : passwordStrength.level === 'medium' ? 'text-yellow-500' : 'text-green-500'}>{passwordStrength.label}</span>
+                  </p>
+                </div>
+              )}
+              {!password && (
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 6 characters
+                </p>
+              )}
             </div>
             <Button 
               className="w-full" 
