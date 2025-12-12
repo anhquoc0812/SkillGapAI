@@ -11,8 +11,12 @@ import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 
 const authSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Please enter a valid email'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
 });
 
 const getPasswordStrength = (password: string): { level: 'weak' | 'medium' | 'strong'; label: string; color: string } => {
@@ -219,9 +223,14 @@ export default function Auth() {
                 </div>
               )}
               {!password && (
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 6 characters
-                </p>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <p>Password must contain:</p>
+                  <ul className="list-disc list-inside pl-1">
+                    <li>At least 8 characters</li>
+                    <li>Uppercase & lowercase letters</li>
+                    <li>Special character (!@#$%...)</li>
+                  </ul>
+                </div>
               )}
             </div>
             <Button 
