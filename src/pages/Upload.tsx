@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload as UploadIcon, FileText, Loader2, Settings2 } from 'lucide-react';
+import { Upload as UploadIcon, FileText, Loader2, Settings2, Image, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UserProfile {
   main_language: string | null;
   dream_job: string | null;
 }
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+const DOCUMENT_TYPES = ['application/pdf', 'text/plain', 'application/msword', 
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'text/csv'];
+
 export default function Upload() {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [uploadType, setUploadType] = useState<'document' | 'image'>('document');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -39,7 +47,6 @@ export default function Upload() {
         .eq('id', user.id)
         .maybeSingle();
 
-      // If no profile exists or fields are missing, go to personalize
       if (!profileData || !profileData.main_language || !profileData.dream_job) {
         navigate('/personalize');
         return;
@@ -57,14 +64,14 @@ export default function Upload() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      const validTypes = ['application/pdf', 'text/plain', 'application/msword', 
-                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                          'text/csv'];
+      const validTypes = uploadType === 'image' ? IMAGE_TYPES : DOCUMENT_TYPES;
       
       if (!validTypes.includes(selectedFile.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload a PDF, TXT, DOCX, or CSV file",
+          description: uploadType === 'image' 
+            ? "Please upload a JPG, PNG, or WebP image"
+            : "Please upload a PDF, TXT, DOCX, or CSV file",
           variant: "destructive"
         });
         return;
@@ -83,7 +90,40 @@ export default function Upload() {
     }
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const extractTextFromImage = async (file: File): Promise<string> => {
+    const base64 = await fileToBase64(file);
+    
+    const { data, error } = await supabase.functions.invoke('ocr-transcript', {
+      body: { 
+        imageBase64: base64,
+        mimeType: file.type
+      }
+    });
+
+    if (error) throw error;
+    if (data.error) throw new Error(data.error);
+    
+    return data.text;
+  };
+
   const extractTextFromFile = async (file: File): Promise<string> => {
+    if (IMAGE_TYPES.includes(file.type)) {
+      return await extractTextFromImage(file);
+    }
+    
     if (file.type === 'text/plain' || file.type === 'text/csv') {
       return await file.text();
     }
@@ -95,11 +135,14 @@ export default function Upload() {
     return await file.text();
   };
 
+  const isImageFile = (file: File) => IMAGE_TYPES.includes(file.type);
+
   const analyzeTranscript = async () => {
     if (!file) return;
 
     setIsAnalyzing(true);
     setProgress(10);
+    setProgressMessage('Starting analysis...');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,6 +157,7 @@ export default function Upload() {
       }
 
       setProgress(20);
+      setProgressMessage('Uploading file...');
 
       const fileName = `${user.id}/${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -121,12 +165,18 @@ export default function Upload() {
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
-      setProgress(40);
+      setProgress(35);
+      
+      if (isImageFile(file)) {
+        setProgressMessage('Running OCR on image...');
+      } else {
+        setProgressMessage('Extracting text...');
+      }
 
       const transcriptText = await extractTextFromFile(file);
       setProgress(50);
+      setProgressMessage('Analyzing skills...');
 
-      // Call analyze-skills function with personalization
       const { data: skillsData, error: skillsError } = await supabase.functions
         .invoke('analyze-skills', {
           body: { 
@@ -137,8 +187,8 @@ export default function Upload() {
 
       if (skillsError) throw skillsError;
       setProgress(70);
+      setProgressMessage('Comparing with job requirements...');
 
-      // Call compare-skills function with dream job
       const { data: comparisonData, error: comparisonError } = await supabase.functions
         .invoke('compare-skills', {
           body: { 
@@ -149,6 +199,7 @@ export default function Upload() {
 
       if (comparisonError) throw comparisonError;
       setProgress(90);
+      setProgressMessage('Saving results...');
 
       const { data: analysisData, error: insertError } = await supabase
         .from('skill_analyses')
@@ -167,6 +218,7 @@ export default function Upload() {
 
       if (insertError) throw insertError;
       setProgress(100);
+      setProgressMessage('Complete!');
 
       toast({
         title: "Analysis complete!",
@@ -185,6 +237,7 @@ export default function Upload() {
     } finally {
       setIsAnalyzing(false);
       setProgress(0);
+      setProgressMessage('');
     }
   };
 
@@ -238,49 +291,113 @@ export default function Upload() {
 
         <Card className="p-8">
           <div className="space-y-6">
-            {/* Upload Area */}
-            <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors">
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                accept=".pdf,.txt,.doc,.docx,.csv"
-                onChange={handleFileChange}
-                disabled={isAnalyzing}
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                {file ? (
-                  <div className="space-y-4">
-                    <FileText className="w-16 h-16 mx-auto text-primary" />
-                    <div>
-                      <p className="text-lg font-medium">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(file.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" type="button">
-                      Change File
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <UploadIcon className="w-16 h-16 mx-auto text-muted-foreground" />
-                    <div>
-                      <p className="text-lg font-medium">Click to upload</p>
-                      <p className="text-sm text-muted-foreground">
-                        PDF, TXT, DOCX, or CSV (max 10MB)
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </label>
-            </div>
+            {/* Upload Type Tabs */}
+            <Tabs value={uploadType} onValueChange={(v) => { setUploadType(v as 'document' | 'image'); setFile(null); }}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="document" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Document
+                </TabsTrigger>
+                <TabsTrigger value="image" className="flex items-center gap-2">
+                  <Camera className="h-4 w-4" />
+                  Photo/Scan
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="document" className="mt-4">
+                <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    id="doc-upload"
+                    className="hidden"
+                    accept=".pdf,.txt,.doc,.docx,.csv"
+                    onChange={handleFileChange}
+                    disabled={isAnalyzing}
+                  />
+                  <label htmlFor="doc-upload" className="cursor-pointer">
+                    {file && !isImageFile(file) ? (
+                      <div className="space-y-4">
+                        <FileText className="w-16 h-16 mx-auto text-primary" />
+                        <div>
+                          <p className="text-lg font-medium">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" type="button">
+                          Change File
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <UploadIcon className="w-16 h-16 mx-auto text-muted-foreground" />
+                        <div>
+                          <p className="text-lg font-medium">Click to upload document</p>
+                          <p className="text-sm text-muted-foreground">
+                            PDF, TXT, DOCX, or CSV (max 10MB)
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="image" className="mt-4">
+                <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    id="img-upload"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    disabled={isAnalyzing}
+                  />
+                  <label htmlFor="img-upload" className="cursor-pointer">
+                    {file && isImageFile(file) ? (
+                      <div className="space-y-4">
+                        <div className="relative w-32 h-32 mx-auto rounded-lg overflow-hidden border">
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-lg font-medium">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" type="button">
+                          Change Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Image className="w-16 h-16 mx-auto text-muted-foreground" />
+                        <div>
+                          <p className="text-lg font-medium">Take photo or upload image</p>
+                          <p className="text-sm text-muted-foreground">
+                            JPG, PNG, or WebP (max 10MB)
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            AI will extract text using OCR
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* Progress Bar */}
             {isAnalyzing && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Analyzing transcript...</span>
+                  <span>{progressMessage}</span>
                   <span>{progress}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
