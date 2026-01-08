@@ -64,37 +64,79 @@ export default function Results() {
     }
   };
 
-  const exportReport = () => {
+  const exportRoadmap = () => {
     if (!analysis) return;
 
-    const report = {
-      title: 'Skill Gap Analysis Report',
-      generatedAt: new Date().toISOString(),
-      fileName: analysis.file_name,
-      analysisDate: analysis.created_at,
-      metrics: {
-        matchPercentage: analysis.match_percentage,
-        marketReadiness: analysis.market_readiness,
-        criticalGapsCount: analysis.skill_gaps.length,
-      },
-      currentSkills: analysis.student_skills,
-      skillGaps: analysis.skill_gaps,
-      marketSkills: analysis.market_skills,
-    };
+    const date = new Date(analysis.created_at).toLocaleDateString();
+    const criticalSkills = analysis.skill_gaps.slice(0, 3);
+    const importantSkills = analysis.skill_gaps.slice(3, 8);
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const roadmap = `
+# 🎯 Your Learning Roadmap
+Generated: ${new Date().toLocaleDateString()}
+Based on: ${analysis.file_name} (Analyzed: ${date})
+
+---
+
+## 📊 Overview
+- **Match Score:** ${analysis.match_percentage}% vs Market Demand
+- **Market Readiness:** ${analysis.market_readiness}%
+- **Skills to Learn:** ${analysis.skill_gaps.length}
+
+---
+
+## ✅ Your Current Skills (${analysis.student_skills.length} identified)
+${analysis.student_skills.map((skill: string) => `• ${skill}`).join('\n')}
+
+---
+
+## 🚨 Phase 1: Critical Skills (Learn First)
+These skills appear in the most job listings and should be your top priority.
+
+${criticalSkills.map((gap: any, i: number) => `${i + 1}. **${gap.skill}**
+   - Required in ${gap.percentage}% of job listings (${gap.count} jobs)
+   - Priority: CRITICAL`).join('\n\n')}
+
+---
+
+## 📈 Phase 2: Important Skills (Learn Next)
+Build on your foundation with these high-demand skills.
+
+${importantSkills.map((gap: any, i: number) => `${i + 4}. **${gap.skill}**
+   - Required in ${gap.percentage}% of job listings (${gap.count} jobs)
+   - Priority: Important`).join('\n\n')}
+
+---
+
+## 🎓 Recommended Learning Path
+
+### Month 1-2: Foundation
+Focus on the top 3 critical skills. Aim for practical, project-based learning.
+
+### Month 3-4: Expansion
+Add the important skills to your toolkit. Start building portfolio projects.
+
+### Month 5-6: Mastery
+Deepen expertise in critical skills. Apply to jobs and refine based on feedback.
+
+---
+
+Good luck on your learning journey! 🚀
+`.trim();
+
+    const blob = new Blob([roadmap], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `skill-analysis-${analysis.id}.json`;
+    link.download = `learning-roadmap-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Report exported",
-      description: "Your skill analysis report has been downloaded",
+      title: "Roadmap exported",
+      description: "Your learning roadmap has been downloaded",
     });
   };
 
@@ -126,7 +168,7 @@ export default function Results() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
-          <Button variant="outline" onClick={exportReport}>
+          <Button variant="outline" onClick={exportRoadmap}>
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </Button>
