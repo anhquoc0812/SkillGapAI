@@ -64,6 +64,40 @@ export default function Results() {
     }
   };
 
+  const exportReport = () => {
+    if (!analysis) return;
+
+    const report = {
+      title: 'Skill Gap Analysis Report',
+      generatedAt: new Date().toISOString(),
+      fileName: analysis.file_name,
+      analysisDate: analysis.created_at,
+      metrics: {
+        matchPercentage: analysis.match_percentage,
+        marketReadiness: analysis.market_readiness,
+        criticalGapsCount: analysis.skill_gaps.length,
+      },
+      currentSkills: analysis.student_skills,
+      skillGaps: analysis.skill_gaps,
+      marketSkills: analysis.market_skills,
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `skill-analysis-${analysis.id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Report exported",
+      description: "Your skill analysis report has been downloaded",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -92,7 +126,7 @@ export default function Results() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={exportReport}>
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </Button>
