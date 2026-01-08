@@ -90,14 +90,12 @@ Deno.serve(async (req) => {
     const matchPercentage = Math.round((matchedCount / topMarketSkills.length) * 100);
     const marketReadiness = Math.min(95, matchPercentage + (studentSkills.length > 15 ? 10 : 0));
 
-    // Create comparison data for chart
-    const chartData = topMarketSkills.slice(0, 8).map(ms => ({
+    // Create comparison data for chart - using real binary data (have skill = 100%, don't have = 0%)
+    const chartData = topMarketSkills.slice(0, 10).map(ms => ({
       skill: ms.skill,
-      yourLevel: studentSkillSet.has(ms.skill.toLowerCase()) ? 
-        Math.min(85, 60 + Math.random() * 25) : 0,
+      hasSkill: studentSkillSet.has(ms.skill.toLowerCase()),
       marketDemand: ms.percentage,
-      gap: studentSkillSet.has(ms.skill.toLowerCase()) ? 
-        Math.max(0, ms.percentage - 70) : ms.percentage
+      count: ms.count
     }));
 
     console.log(`Analysis complete: ${matchPercentage}% match, ${skillGaps.length} gaps`);
