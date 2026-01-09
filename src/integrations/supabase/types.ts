@@ -17,6 +17,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          custom_skills: string[] | null
           dream_job: string | null
           id: string
           main_language: string | null
@@ -24,6 +25,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_skills?: string[] | null
           dream_job?: string | null
           id: string
           main_language?: string | null
@@ -31,6 +33,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_skills?: string[] | null
           dream_job?: string | null
           id?: string
           main_language?: string | null
