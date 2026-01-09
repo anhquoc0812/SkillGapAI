@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, TrendingUp, Target, Award } from 'lucide-react';
+import { ArrowLeft, Download, TrendingUp, Target, Award, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SkillGapChart } from '@/components/SkillGapChart';
+import { CourseRecommendations } from '@/components/CourseRecommendations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { generateSkillGapPDF } from '@/lib/pdfExport';
 
 interface AnalysisResult {
   id: string;
@@ -25,6 +27,8 @@ export default function Results() {
   const { toast } = useToast();
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadAnalysis();
@@ -140,6 +144,37 @@ Good luck on your learning journey! 🚀
     });
   };
 
+  const handleExportPDF = async () => {
+    if (!analysis || !chartRef.current) {
+      toast({
+        title: "Cannot export PDF",
+        description: "Analysis data or chart not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExportingPDF(true);
+
+    try {
+      await generateSkillGapPDF(analysis, chartRef.current);
+      
+      toast({
+        title: "PDF exported successfully",
+        description: "Your report has been downloaded",
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({
+        title: "PDF export failed",
+        description: "Failed to generate PDF report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -168,10 +203,25 @@ Good luck on your learning journey! 🚀
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
-          <Button variant="outline" onClick={exportRoadmap}>
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="default" onClick={handleExportPDF} disabled={isExportingPDF}>
+              {isExportingPDF ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={exportRoadmap}>
+              <Download className="mr-2 h-4 w-4" />
+              Export JSON
+            </Button>
+          </div>
         </div>
 
         {/* Title */}
@@ -221,6 +271,7 @@ Good luck on your learning journey! 🚀
         {/* Chart */}
         <Card className="p-8 mb-12">
           <SkillGapChart 
+            ref={chartRef}
             data={analysis.market_skills}
             matchPercentage={analysis.match_percentage}
             criticalGaps={analysis.skill_gaps.length}
@@ -270,6 +321,11 @@ Good luck on your learning journey! 🚀
             ))}
           </div>
         </Card>
+
+        {/* Course Recommendations */}
+        <div className="mb-8">
+          <CourseRecommendations skills={analysis.skill_gaps} maxSkills={5} />
+        </div>
 
         {/* CTA */}
         <div className="mt-12 text-center">

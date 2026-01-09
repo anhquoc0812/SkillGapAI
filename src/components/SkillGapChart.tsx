@@ -1,3 +1,4 @@
+import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
@@ -15,12 +16,12 @@ interface SkillGapChartProps {
   marketReadiness?: number;
 }
 
-export const SkillGapChart = ({ 
+export const SkillGapChart = React.forwardRef<HTMLDivElement, SkillGapChartProps>(({ 
   data = [], 
   matchPercentage = 0,
   criticalGaps = 0,
   marketReadiness = 0
-}: SkillGapChartProps) => {
+}, ref) => {
   // Sort by market demand descending
   const chartData = [...data].sort((a, b) => b.marketDemand - a.marketDemand).slice(0, 10);
   
@@ -64,7 +65,7 @@ export const SkillGapChart = ({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={ref}>
       <div className="mb-6">
         <h3 className="text-2xl font-bold mb-2">Market Demand vs Your Skills</h3>
         <p className="text-muted-foreground">
@@ -144,4 +145,6 @@ export const SkillGapChart = ({
       </div>
     </div>
   );
-};
+});
+
+SkillGapChart.displayName = 'SkillGapChart';
