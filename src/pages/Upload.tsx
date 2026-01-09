@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UserProfile {
-  main_language: string | null;
+  custom_skills: string[] | null;
   dream_job: string | null;
 }
 
@@ -43,11 +43,11 @@ export default function Upload() {
 
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('main_language, dream_job')
+        .select('custom_skills, dream_job')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!profileData || !profileData.main_language || !profileData.dream_job) {
+      if (!profileData || !profileData.custom_skills?.length || !profileData.dream_job) {
         navigate('/personalize');
         return;
       }
@@ -180,8 +180,7 @@ export default function Upload() {
       const { data: skillsData, error: skillsError } = await supabase.functions
         .invoke('analyze-skills', {
           body: { 
-            transcriptText,
-            mainLanguage: profile?.main_language
+            transcriptText
           }
         });
 
@@ -193,7 +192,8 @@ export default function Upload() {
         .invoke('compare-skills', {
           body: { 
             studentSkills: skillsData.skills,
-            dreamJob: profile?.dream_job
+            dreamJob: profile?.dream_job,
+            customSkills: profile?.custom_skills
           }
         });
 
@@ -269,7 +269,7 @@ export default function Upload() {
               </h3>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>
-                  <span className="font-medium text-foreground">Main Language:</span> {profile?.main_language}
+                  <span className="font-medium text-foreground">Your Skills:</span> {profile?.custom_skills?.slice(0, 3).join(', ')}{profile?.custom_skills && profile.custom_skills.length > 3 ? ` +${profile.custom_skills.length - 3} more` : ''}
                 </p>
                 <p>
                   <span className="font-medium text-foreground">Dream Job:</span> {profile?.dream_job}
