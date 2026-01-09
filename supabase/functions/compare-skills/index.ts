@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { studentSkills, dreamJob } = await req.json();
+    const { studentSkills, dreamJob, customSkills } = await req.json();
     
     if (!Array.isArray(studentSkills)) {
       return new Response(
@@ -24,7 +24,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Comparing skills against market data...');
+    // Merge custom skills from profile with extracted skills
+    const allStudentSkills = [...studentSkills];
+    if (Array.isArray(customSkills)) {
+      for (const skill of customSkills) {
+        if (!allStudentSkills.some(s => s.toLowerCase() === skill.toLowerCase())) {
+          allStudentSkills.push(skill);
+        }
+      }
+    }
+
+    console.log(`Comparing ${allStudentSkills.length} skills (${studentSkills.length} extracted + ${customSkills?.length || 0} custom) against market data...`);
 
     // If dream job is provided, get job-specific skills instead of market data
     let marketData: Map<string, number>;
@@ -58,7 +68,7 @@ Deno.serve(async (req) => {
       marketData = await loadMarketData();
     }
 
-    const studentSkillSet = new Set(studentSkills.map((s: string) => s.toLowerCase()));
+    const studentSkillSet = new Set(allStudentSkills.map((s: string) => s.toLowerCase()));
     const isJobSpecific = !!dreamJob;
 
     // Find skills in demand
@@ -89,7 +99,7 @@ Deno.serve(async (req) => {
     ).length;
 
     const matchPercentage = Math.round((matchedCount / topMarketSkills.length) * 100);
-    const marketReadiness = Math.min(95, matchPercentage + (studentSkills.length > 15 ? 10 : 0));
+    const marketReadiness = Math.min(95, matchPercentage + (allStudentSkills.length > 15 ? 10 : 0));
 
     // Create comparison data for chart - using real binary data (have skill = 100%, don't have = 0%)
     const chartData = topMarketSkills.slice(0, 10).map(ms => ({
@@ -109,7 +119,7 @@ Deno.serve(async (req) => {
         skillGaps,
         chartData,
         totalMarketSkills: marketSkills.length,
-        studentSkillCount: studentSkills.length
+        studentSkillCount: allStudentSkills.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
