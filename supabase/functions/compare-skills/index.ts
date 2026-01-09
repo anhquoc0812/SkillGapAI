@@ -47,9 +47,9 @@ Deno.serve(async (req) => {
         const jobData = await jobSkillsResponse.json();
         marketData = new Map();
         
-        // Job-specific skills are 100% required for that role
-        jobData.skills.forEach((skill: string) => {
-          marketData.set(skill.toLowerCase(), 100); // 100% importance
+        // Job-specific skills now have real importance levels
+        jobData.skills.forEach((skillData: { skill: string; importance: number }) => {
+          marketData.set(skillData.skill.toLowerCase(), skillData.importance);
         });
       } else {
         marketData = await loadMarketData();
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // Find skills in demand
     const marketSkills: MarketSkill[] = [];
     for (const [skill, count] of marketData.entries()) {
-      // For job-specific: count IS the percentage (100%)
+      // For job-specific: count IS the percentage (importance level)
       // For market data: calculate percentage from 1491 total jobs
       const percentage = isJobSpecific ? count : Math.round((count / 1491) * 100);
       marketSkills.push({
